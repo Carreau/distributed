@@ -993,7 +993,11 @@ class Worker(ServerNode):
     #############
 
     async def start(self):
-        if self.status and self.status in (Status.closed, Status.closing, Status.closing_gracefully):
+        if self.status and self.status in (
+            Status.closed,
+            Status.closing,
+            Status.closing_gracefully,
+        ):
             return
         assert self.status is Status.undefined, self.status
 

@@ -109,23 +109,26 @@ DEFAULT_EXTENSIONS = [
 ALL_TASK_STATES = {"released", "waiting", "no-worker", "processing", "erred", "memory"}
 
 from enum import Enum
+
+
 class Status(Enum):
     """
     This Enum contains the various states a worker can be.
     Those states can be observed and used in worker, scheduler and nanny.
 
     """
-    running = 'running'
-    closed = 'closed'
-    closing = 'closing'
-    closing_gracefully = 'closing-gracefully'
+
+    running = "running"
+    closed = "closed"
+    closing = "closing"
+    closing_gracefully = "closing-gracefully"
 
     def __eq__(self, other):
         if isinstance(other, str):
-            raise ValueError(f'compared to string version: {other!r}')
+            raise ValueError(f"compared to string version: {other!r}")
         elif not isinstance(self, Status):
-            raise ValueError(f'comparison between Enums: {other!r}')
-        else: 
+            raise ValueError(f"comparison between Enums: {other!r}")
+        else:
             return self.value == other.value
 
 
@@ -163,10 +166,6 @@ class ClientState:
 
     def __str__(self):
         return self.client_key
-
-
-
-
 
 
 class WorkerState:
@@ -1514,8 +1513,7 @@ class Scheduler(ServerNode):
         --------
         Scheduler.cleanup
         """
-        if self.status in (Status.closing, Status.closed,
-                Status.closing_gracefully):
+        if self.status in (Status.closing, Status.closed, Status.closing_gracefully):
             await self.finished()
             return
         self.status = Status.closing
