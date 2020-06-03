@@ -145,6 +145,11 @@ class ClientState:
         return self.client_key
 
 
+
+from .workerstatus import Status
+
+
+
 class WorkerState:
     """
     A simple object holding information about a worker.
@@ -274,7 +279,7 @@ class WorkerState:
         self.versions = versions or {}
         self.nanny = nanny
 
-        self.status = "running"
+        self.status = Status.running
         self.nbytes = 0
         self.occupancy = 0
         self.metrics = {}
@@ -1428,7 +1433,7 @@ class Scheduler(ServerNode):
     async def start(self):
         """ Clear out old state and restart all running coroutines """
         await super().start()
-        assert self.status != "running"
+        assert self.status != Status.running
 
         enable_gc_diagnosis()
 
@@ -1490,10 +1495,10 @@ class Scheduler(ServerNode):
         --------
         Scheduler.cleanup
         """
-        if self.status.startswith("clos"):
+        if self.status in {Status.closing, Status.closed, Status.closing_gracefully}:
             await self.finished()
             return
-        self.status = "closing"
+        self.status = Status.closing
 
         logger.info("Scheduler closing...")
         setproctitle("dask-scheduler [closing]")
@@ -1540,7 +1545,7 @@ class Scheduler(ServerNode):
 
         await self.rpc.close()
 
-        self.status = "closed"
+        self.status = Status.closed
         self.stop()
         await super(Scheduler, self).close()
 
@@ -2164,7 +2169,7 @@ class Scheduler(ServerNode):
         state.
         """
         with log_errors():
-            if self.status == "closed":
+            if self.status == Status.closed:
                 return
 
             address = self.coerce_address(address)
@@ -2499,7 +2504,7 @@ class Scheduler(ServerNode):
                 c.send(msg)
                 # logger.debug("Scheduler sends message to client %s", msg)
             except CommClosedError:
-                if self.status == "running":
+                if self.status == Status.running:
                     logger.critical("Tried writing to closed comm: %s", msg)
 
     async def add_client(self, comm, client=None, versions=None):
@@ -2545,14 +2550,14 @@ class Scheduler(ServerNode):
                 if not shutting_down():
                     await self.client_comms[client].close()
                     del self.client_comms[client]
-                    if self.status == "running":
+                    if self.status == Status.running:
                         logger.info("Close client connection: %s", client)
             except TypeError:  # comm becomes None during GC
                 pass
 
     def remove_client(self, client=None):
         """ Remove client from network """
-        if self.status == "running":
+        if self.status == Status.running:
             logger.info("Remove client %s", client)
         self.log_event(["all", client], {"action": "remove-client", "client": client})
         try:
@@ -3613,7 +3618,7 @@ class Scheduler(ServerNode):
             if inspect.isawaitable(state):
                 state = await state
             try:
-                while self.status == "running":
+                while self.status == Status.running:
                     if state is None:
                         response = function(self)
                     else:
@@ -4780,7 +4785,7 @@ class Scheduler(ServerNode):
 
         This is useful for load balancing and adaptivity.
         """
-        if self.total_nthreads == 0 or ws.status == "closed":
+        if self.total_nthreads == 0 or ws.status == Status.closed:
             return
         if occ is None:
             occ = ws.occupancy
@@ -5191,7 +5196,7 @@ class Scheduler(ServerNode):
         """
         DELAY = 0.1
         try:
-            if self.status == "closed":
+            if self.status == Status.closed:
                 return
 
             last = time()
@@ -5535,6 +5540,7 @@ class WorkerStatusPlugin(SchedulerPlugin):
     """
 
     def __init__(self, scheduler, comm):
+        self._status = None
         self.bcomm = BatchedSend(interval="5ms")
         self.bcomm.start(comm)
 

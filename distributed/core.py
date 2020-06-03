@@ -37,6 +37,7 @@ from .utils import (
     TimeoutError,
 )
 from . import protocol
+from .workerstatus import Status
 
 
 class RPCClosed(IOError):
@@ -197,7 +198,7 @@ class Server:
 
         self.io_loop.add_callback(set_thread_ident)
         self._startup_lock = asyncio.Lock()
-        self.status = None
+        self.status = Status.undefined
 
         self.rpc = ConnectionPool(
             limit=connection_limit,
@@ -219,12 +220,12 @@ class Server:
         async def _():
             timeout = getattr(self, "death_timeout", 0)
             async with self._startup_lock:
-                if self.status == "running":
+                if self.status == Status.running:
                     return self
                 if timeout:
                     try:
                         await asyncio.wait_for(self.start(), timeout=timeout)
-                        self.status = "running"
+                        self.status = Status.running
                     except Exception:
                         await self.close(timeout=1)
                         raise TimeoutError(
@@ -234,7 +235,7 @@ class Server:
                         )
                 else:
                     await self.start()
-                    self.status = "running"
+                    self.status = Status.running
             return self
 
         return _().__await__()
@@ -458,7 +459,7 @@ class Server:
                             self._ongoing_coroutines.add(result)
                             result = await result
                     except (CommClosedError, CancelledError) as e:
-                        if self.status == "running":
+                        if self.status == Status.running:
                             logger.info("Lost connection to %r: %s", address, e)
                         break
                     except Exception as e:
@@ -650,7 +651,7 @@ class rpc:
         self.comms = {}
         self.address = coerce_to_address(arg)
         self.timeout = timeout
-        self.status = "running"
+        self.status = Status.running
         self.deserialize = deserialize
         self.serializers = serializers
         self.deserializers = deserializers if deserializers is not None else serializers
@@ -676,7 +677,7 @@ class rpc:
 
         As is done in __getattr__ below.
         """
-        if self.status == "closed":
+        if self.status == Status.closed:
             raise RPCClosed("RPC Closed")
         to_clear = set()
         open = False
@@ -744,9 +745,9 @@ class rpc:
         return send_recv_from_rpc
 
     def close_rpc(self):
-        if self.status != "closed":
+        if self.status != Status.closed:
             rpc.active.discard(self)
-        self.status = "closed"
+        self.status = Status.closed
         return asyncio.gather(*self.close_comms())
 
     def __enter__(self):
@@ -762,9 +763,9 @@ class rpc:
         await self.close_rpc()
 
     def __del__(self):
-        if self.status != "closed":
+        if self.status != Status.closed:
             rpc.active.discard(self)
-            self.status = "closed"
+            self.status = Status.closed
             still_open = [comm for comm in self.comms if not comm.closed()]
             if still_open:
                 logger.warning(
