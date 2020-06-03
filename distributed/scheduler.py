@@ -125,7 +125,9 @@ class Status(Enum):
 
     def __eq__(self, other):
         if isinstance(other, str):
-            raise ValueError(f"compared to string version: {other!r}")
+            assert other in [s.value for s in Status]
+            return other == self.value
+            #raise ValueError(f"compared to string version: {other!r}")
         elif not isinstance(self, Status):
             raise ValueError(f"comparison between Enums: {other!r}")
         else:
