@@ -1178,7 +1178,7 @@ class Worker(ServerNode):
         This first informs the scheduler that we're shutting down, and asks it
         to move our data elsewhere.  Afterwards, we close as normal
         """
-        if self.status in {Status.closing, Status.closing_gracefully}:
+        if self.status in (Status.closing, Status.closing_gracefully):
             await self.finished()
 
         if self.status == Status.closed:
