@@ -58,7 +58,7 @@ class Status(Enum):
         if isinstance(other, str):
             assert other in [s.value for s in Status]
             return other == self.value
-            #raise ValueError(f"compared to string version: {other!r}")
+            # raise ValueError(f"compared to string version: {other!r}")
         elif not isinstance(self, Status):
             raise ValueError(f"comparison between Enums: {other!r}")
         else:

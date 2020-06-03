@@ -737,8 +737,8 @@ async def test_retire_workers_n(c, s, a, b):
     assert len(s.workers) == 0
 
     while not (
-        a.status in (Status.close, Status.closing, Status.closing_gracefully)
-        and b.status in (Status.close, Status.closing, Status.closing_gracefully)
+        a.status in (Status.closed, Status.closing, Status.closing_gracefully)
+        and b.status in (Status.closed, Status.closing, Status.closing_gracefully)
     ):
         await asyncio.sleep(0.01)
 

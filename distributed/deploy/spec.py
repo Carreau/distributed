@@ -20,7 +20,7 @@ from ..utils import (
     import_term,
     TimeoutError,
 )
-from ..scheduler import Scheduler, Status as SchedulerStatus 
+from ..scheduler import Scheduler, Status as SchedulerStatus
 from ..security import Security
 
 
