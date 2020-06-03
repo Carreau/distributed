@@ -37,7 +37,7 @@ from .utils import (
     TimeoutError,
 )
 from . import protocol
-from .workerstatus import WStatus as Status
+from .worker import Status
 
 class RPCClosed(IOError):
     pass
