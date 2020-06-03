@@ -67,7 +67,7 @@ from .utils import (
 from .utils_comm import pack_data, gather_from_workers, retry_operation
 from .utils_perf import ThrottledGC, enable_gc_diagnosis, disable_gc_diagnosis
 from .versions import get_versions
-from .workerstatus import Status
+from .workerstatus import WStatus as Status
 
 logger = logging.getLogger(__name__)
 
@@ -992,7 +992,7 @@ class Worker(ServerNode):
     #############
 
     async def start(self):
-        if self.status and self.status in {Status.closed, Status.closing, Status.closing_gracefully}:
+        if self.status and self.status in (Status.closed, Status.closing, Status.closing_gracefully):
             return
         assert self.status is Status.undefined, self.status
 

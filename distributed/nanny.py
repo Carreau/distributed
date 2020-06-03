@@ -35,7 +35,29 @@ from .utils import (
     TimeoutError,
 )
 from .worker import run, parse_memory_limit, Worker
-from .workerstatus import Status
+from enum import Enum
+
+class Status(Enum):
+    """
+    This Enum contains the various states a worker can be.
+    Those states can be observed and used in worker, scheduler and nanny.
+
+    """
+    init = 'init'
+    starting = 'starting'
+    running = 'running'
+    stopped = 'stopped'
+    closed = 'closed'
+    closing = 'closing'
+    closing_gracefully = 'closing-gracefully'
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            raise ValueError(f'compared to string version: {other!r}')
+        elif not isinstance(self, Status):
+            raise ValueError(f'comparison between Enums: {other!r}')
+        else: 
+            return self.value == other.value
 
 logger = logging.getLogger(__name__)
 
