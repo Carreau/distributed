@@ -9,6 +9,7 @@ import threading
 import traceback
 import uuid
 import weakref
+import warnings
 
 import dask
 import tblib
@@ -69,6 +70,11 @@ class Status(Enum):
         if isinstance(other, type(self)):
             return self.value == other.value
         elif isinstance(other, str) or (other is None):
+            warnings.warn(
+                f"Since distributed 2.19 `.status` is now an Enum, please compare with `Status.{other}`",
+                PendingDeprecationWarning,
+                stacklevel=2,
+            )
             assert other in [
                 s.value for s in type(self)
             ], f"comparison with non-existing states {other}"
@@ -261,6 +267,11 @@ class Server:
         if isinstance(new_status, Status):
             self._status = new_status
         elif isinstance(new_status, str) or new_status is None:
+            warnings.warn(
+                f"Since distributed 2.19 `.status` is now an Enum, please assign `Status.{new_status}`",
+                PendingDeprecationWarning,
+                stacklevel=2,
+            )
             corresponding_enum_variants = [s for s in Status if s.value == new_status]
             assert len(corresponding_enum_variants) == 1
             self._status = corresponding_enum_variants[0]
