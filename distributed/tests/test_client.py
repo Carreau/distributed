@@ -5978,7 +5978,7 @@ def test_async_with(loop):
     loop.run_sync(f)
 
     assert result == 11
-    assert client.status == Status.closed
+    assert client.status == "closed"
     assert cluster.status == Status.closed
 
 
