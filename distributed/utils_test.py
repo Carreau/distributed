@@ -1505,7 +1505,7 @@ def check_instances():
     ), {n: n.status for n in Nanny._instances}
 
     # assert not list(SpecCluster._instances)  # TODO
-    assert all(c.status == "closed" for c in SpecCluster._instances), list(
+    assert all(c.status == Status.closed for c in SpecCluster._instances), list(
         SpecCluster._instances
     )
     SpecCluster._instances.clear()

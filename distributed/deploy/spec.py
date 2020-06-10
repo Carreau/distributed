@@ -277,7 +277,7 @@ class SpecCluster(Cluster):
             self.sync(self._correct_state)
 
     async def _start(self):
-        while self.status == "starting":
+        while self.status == Status.starting:
             await asyncio.sleep(0.01)
         if self.status == Status.running:
             return
