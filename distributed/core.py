@@ -73,7 +73,7 @@ class Status(Enum):
             warnings.warn(
                 f"Since distributed 2.19 `.status` is now an Enum, please compare with `Status.{other}`",
                 PendingDeprecationWarning,
-                stacklevel=2,
+                stacklevel=1,
             )
             assert other in [
                 s.value for s in type(self)
@@ -270,13 +270,13 @@ class Server:
             warnings.warn(
                 f"Since distributed 2.19 `.status` is now an Enum, please assign `Status.{new_status}`",
                 PendingDeprecationWarning,
-                stacklevel=2,
+                stacklevel=1,
             )
             corresponding_enum_variants = [s for s in Status if s.value == new_status]
             assert len(corresponding_enum_variants) == 1
             self._status = corresponding_enum_variants[0]
         else:
-            raise TypeError
+            raise TypeError(f'expected Status or str, got {new_status}')
 
     async def finished(self):
         """ Wait until the server has finished """

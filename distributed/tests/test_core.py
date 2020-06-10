@@ -344,7 +344,7 @@ async def check_rpc(listen_addr, rpc_addr=None, listen_args={}, connection_args=
         assert response == b"pong"
 
     assert not remote.comms
-    assert remote.status == "closed"
+    assert remote.status == Status.closed
 
     server.stop()
     await asyncio.sleep(0)

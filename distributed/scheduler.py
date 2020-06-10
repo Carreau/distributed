@@ -308,7 +308,8 @@ class WorkerState:
             corresponding_enum_variants = [s for s in Status if s.value == new_status]
             assert len(corresponding_enum_variants) == 1
             self._status = corresponding_enum_variants[0]
-        raise TypeError
+        else:
+            raise TypeError(f'expected Status or str, got {new_status}')
 
     @property
     def host(self):
