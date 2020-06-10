@@ -534,7 +534,10 @@ class Server:
                         logger.exception(e)
                         result = error_message(e, status="uncaught-error")
 
-                if reply and result != Status.dont_reply.value:
+                # result is not type stable:
+                # when LHS is not Status then RHS must not be Status or it raises.
+                # when LHS is Status then RHS must be status or it raises in tests
+                if reply and ininstance(result, Status) and result != Status.dont_reply:
                     try:
                         await comm.write(result, serializers=serializers)
                     except (EnvironmentError, TypeError) as e:
