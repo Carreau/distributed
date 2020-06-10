@@ -913,8 +913,8 @@ def gen_cluster(
                             if s.validate:
                                 s.validate_state()
                         finally:
-                            if client and c.status not in ("closing", "closed"):
-                                await c._close(fast=s.status == "closed")
+                            if client and c.status not in (Status.closing, Status.closed):
+                                await c._close(fast=s.status == Status.closed)
                             await end_cluster(s, workers)
                             await asyncio.wait_for(cleanup_global_workers(), 1)
 

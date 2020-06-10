@@ -155,7 +155,7 @@ async def test_close_on_disconnect(s, w):
     await s.close()
 
     start = time()
-    while w.status != "closed":
+    while w.status != Status.closed:
         await asyncio.sleep(0.05)
         assert time() < start + 9
 
@@ -187,7 +187,7 @@ async def test_nanny_death_timeout(s):
     with pytest.raises(TimeoutError):
         await w
 
-    assert w.status == "closed"
+    assert w.status == Status.closed
 
 
 @gen_cluster(client=True, Worker=Nanny)

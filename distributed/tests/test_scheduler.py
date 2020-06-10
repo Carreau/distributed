@@ -1736,7 +1736,7 @@ async def test_async_context_manager(cleanup):
     async with Scheduler(port=0) as s:
         assert s.status == "running"
         async with Worker(s.address) as w:
-            assert w.status == "running"
+            assert w.status == Status.running
             assert s.workers
         assert not s.workers
 

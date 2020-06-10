@@ -581,7 +581,7 @@ class WorkerProcess:
         self.worker_address = msg["address"]
         self.worker_dir = msg["dir"]
         assert self.worker_address
-        self.status = "running"
+        self.status = Status.running
         self.running.set()
 
         init_q.close()

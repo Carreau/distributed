@@ -27,7 +27,7 @@ from distributed import (
     wait,
 )
 from distributed.compatibility import WINDOWS
-from distributed.core import rpc, CommClosedError
+from distributed.core import rpc, CommClosedError, Status
 from distributed.scheduler import Scheduler
 from distributed.metrics import time
 from distributed.worker import (
@@ -801,7 +801,7 @@ async def test_worker_death_timeout(s):
     assert "Worker" in str(info.value)
     assert "timed out" in str(info.value) or "failed to start" in str(info.value)
 
-    assert w.status == "closed"
+    assert w.status == Status.closed
 
 
 @gen_cluster(client=True)
@@ -1630,7 +1630,7 @@ async def test_heartbeat_comm_closed(cleanup, monkeypatch, reconnect):
 
                 await w.heartbeat()
                 if reconnect:
-                    assert w.status == "running"
+                    assert w.status == Status.running
                 else:
-                    assert w.status == "closed"
+                    assert w.status == Status.closed
     assert "Heartbeat to scheduler failed" in logger.getvalue()
