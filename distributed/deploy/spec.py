@@ -93,7 +93,7 @@ class ProcessInterface:
         This method should kill the process a bit more forcefully and does not
         need to worry about shutting down gracefully
         """
-        self.status = "closed"
+        self.status = Status.closed
         self._event_finished.set()
 
     async def finished(self):
@@ -637,5 +637,5 @@ async def run_spec(spec: dict, *args):
 def close_clusters():
     for cluster in list(SpecCluster._instances):
         with suppress(gen.TimeoutError, TimeoutError):
-            if cluster.status != "closed":
+            if cluster.status != Status.closed:
                 cluster.close(timeout=10)

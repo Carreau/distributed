@@ -188,7 +188,7 @@ def test_Client_with_local(loop):
 def test_Client_solo(loop):
     with Client(loop=loop, silence_logs=False) as c:
         pass
-    assert c.cluster.status == "closed"
+    assert c.cluster.status == Status.closed
 
 
 @gen_test()
@@ -223,7 +223,7 @@ def test_Client_kwargs(loop):
     with Client(loop=loop, processes=False, n_workers=2, silence_logs=False) as c:
         assert len(c.cluster.workers) == 2
         assert all(isinstance(w, Worker) for w in c.cluster.workers.values())
-    assert c.cluster.status == "closed"
+    assert c.cluster.status == Status.closed
 
 
 def test_Client_unused_kwargs_with_cluster(loop):
