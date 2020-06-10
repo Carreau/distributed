@@ -534,7 +534,7 @@ class Server:
                         logger.exception(e)
                         result = error_message(e, status="uncaught-error")
 
-                if reply and result != Status.dont_reply:
+                if reply and result != Status.dont_reply.value:
                     try:
                         await comm.write(result, serializers=serializers)
                     except (EnvironmentError, TypeError) as e:
