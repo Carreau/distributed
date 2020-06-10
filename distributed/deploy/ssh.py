@@ -7,6 +7,7 @@ import weakref
 import dask
 
 from .spec import SpecCluster, ProcessInterface
+from ..core import Status
 from ..utils import cli_keywords
 from ..scheduler import Scheduler as _Scheduler
 from ..worker import Worker as _Worker
@@ -23,6 +24,26 @@ class Process(ProcessInterface):
     Worker
     Scheduler
     """
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, new_status):
+        if isinstance(new_status, Status):
+            self._status = new_status
+        elif isinstance(new_status, str) or new_status is None:
+            warnings.warn(
+                f"Since distributed 2.19 `.status` is now an Enum, please assign `Status.{new_status}`",
+                PendingDeprecationWarning,
+                stacklevel=1,
+            )
+            corresponding_enum_variants = [s for s in Status if s.value == new_status]
+            assert len(corresponding_enum_variants) == 1
+            self._status = corresponding_enum_variants[0]
+        else:
+            raise TypeError(f"expected Status or str, got {new_status}")
 
     def __init__(self, **kwargs):
         self.connection = None
@@ -130,7 +151,7 @@ class Worker(Process):
             logger.info(line.strip())
             if "worker at" in line:
                 self.address = line.split("worker at:")[1].strip()
-                self.status = "running"
+                self.status = Status.running
                 break
         logger.debug("%s", line)
         await super().start()
