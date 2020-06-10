@@ -276,7 +276,7 @@ class Server:
             assert len(corresponding_enum_variants) == 1
             self._status = corresponding_enum_variants[0]
         else:
-            raise TypeError(f'expected Status or str, got {new_status}')
+            raise TypeError(f"expected Status or str, got {new_status}")
 
     async def finished(self):
         """ Wait until the server has finished """
