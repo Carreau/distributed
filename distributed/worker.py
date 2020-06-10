@@ -1311,7 +1311,7 @@ class Worker(ServerNode):
             }
         )
 
-        return "dont-reply"
+        return Status.dont_reply
 
     ###################
     # Local Execution #

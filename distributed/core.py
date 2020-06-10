@@ -59,6 +59,7 @@ class Status(Enum):
     stopped = "stopped"
     stopping = "stopping"
     undefined = None
+    dont_reply = "dont-reply"
 
     def __eq__(self, other):
         """
@@ -533,7 +534,7 @@ class Server:
                         logger.exception(e)
                         result = error_message(e, status="uncaught-error")
 
-                if reply and result != "dont-reply":
+                if reply and result != Status.dont_reply:
                     try:
                         await comm.write(result, serializers=serializers)
                     except (EnvironmentError, TypeError) as e:
