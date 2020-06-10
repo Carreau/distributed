@@ -10,6 +10,7 @@ from dask.utils import format_bytes
 
 from .adaptive import Adaptive
 
+from ..core import Status
 from ..utils import (
     log_errors,
     sync,
@@ -54,7 +55,7 @@ class Cluster:
         self.periodic_callbacks = {}
         self._asynchronous = asynchronous
 
-        self.status = "created"
+        self.status = Status.created
 
     async def _start(self):
         comm = await self.scheduler_comm.live_comm()
@@ -64,10 +65,10 @@ class Cluster:
         self._watch_worker_status_task = asyncio.ensure_future(
             self._watch_worker_status(comm)
         )
-        self.status = "running"
+        self.status = Status.running
 
     async def _close(self):
-        if self.status == "closed":
+        if self.status == Status.closed:
             return
 
         await self._watch_worker_status_comm.close()
@@ -77,14 +78,14 @@ class Cluster:
             pc.stop()
         await self.scheduler_comm.close_rpc()
 
-        self.status = "closed"
+        self.status = Status.closed
 
     def close(self, timeout=None):
         with suppress(RuntimeError):  # loop closed during process shutdown
             return self.sync(self._close, callback_timeout=timeout)
 
     def __del__(self):
-        if self.status != "closed":
+        if self.status != Status.closed:
             with suppress(AttributeError, RuntimeError):  # during closing
                 self.loop.add_callback(self.close)
 
