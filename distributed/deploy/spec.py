@@ -83,7 +83,7 @@ class ProcessInterface:
         For the scheduler we will expect the scheduler's ``.address`` attribute
         to be avaialble after this completes.
         """
-        self.status = "running"
+        self.status = Status.running
 
     async def close(self):
         """ Close the process
@@ -279,9 +279,9 @@ class SpecCluster(Cluster):
     async def _start(self):
         while self.status == "starting":
             await asyncio.sleep(0.01)
-        if self.status == "running":
+        if self.status == Status.running:
             return
-        if self.status == "closed":
+        if self.status == Status.closed:
             raise ValueError("Cluster is closed")
 
         self._lock = asyncio.Lock()
@@ -300,7 +300,7 @@ class SpecCluster(Cluster):
             cls = import_term(cls)
         self.scheduler = cls(**self.scheduler_spec.get("options", {}))
 
-        self.status = "starting"
+        self.status = Status.starting
         self.scheduler = await self.scheduler
         self.scheduler_comm = rpc(
             getattr(self.scheduler, "external_address", None) or self.scheduler.address,
@@ -391,11 +391,11 @@ class SpecCluster(Cluster):
         return _().__await__()
 
     async def _close(self):
-        while self.status == "closing":
+        while self.status == Status.closing:
             await asyncio.sleep(0.1)
-        if self.status == "closed":
+        if self.status == Status.closed:
             return
-        self.status = "closing"
+        self.status = Status.closing
 
         self.scale(0)
         await self._correct_state()
@@ -422,7 +422,7 @@ class SpecCluster(Cluster):
     async def __aenter__(self):
         await self
         await self._correct_state()
-        assert self.status == "running"
+        assert self.status == Status.running
         return self
 
     def __exit__(self, typ, value, traceback):
@@ -473,7 +473,7 @@ class SpecCluster(Cluster):
         while len(self.worker_spec) > n:
             self.worker_spec.popitem()
 
-        if self.status not in ("closing", "closed"):
+        if self.status not in (Status.closing, Status.closed):
             while len(self.worker_spec) < n:
                 self.worker_spec.update(self.new_worker_spec())
 
