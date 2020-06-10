@@ -48,6 +48,7 @@ class Process(ProcessInterface):
     def __init__(self, **kwargs):
         self.connection = None
         self.proc = None
+        self.status = Status.init
         super().__init__(**kwargs)
 
     async def start(self):

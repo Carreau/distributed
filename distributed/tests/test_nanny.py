@@ -16,7 +16,7 @@ from tornado.ioloop import IOLoop
 import dask
 from distributed.diagnostics import SchedulerPlugin
 from distributed import Nanny, rpc, Scheduler, Worker, Client, wait, worker
-from distributed.core import CommClosedError
+from distributed.core import CommClosedError, Status
 from distributed.metrics import time
 from distributed.protocol.pickle import dumps
 from distributed.utils import tmpfile, TimeoutError, parse_ports
@@ -140,8 +140,8 @@ async def test_no_hang_when_scheduler_closes(s, a, b):
     with captured_logger("tornado.application", logging.ERROR) as logger:
         await s.close()
         await asyncio.sleep(1.2)
-        assert a.status == "closed"
-        assert b.status == "closed"
+        assert a.status == Status.closed
+        assert b.status == Status.closed
 
     out = logger.getvalue()
     assert "Timed out trying to connect" not in out
@@ -489,11 +489,11 @@ async def test_nanny_closes_cleanly(cleanup):
                 with client.rpc(n.worker_address) as w:
                     IOLoop.current().add_callback(w.terminate)
                     start = time()
-                    while n.status != "closed":
+                    while n.status != Status.closed:
                         await asyncio.sleep(0.01)
                         assert time() < start + 5
 
-                    assert n.status == "closed"
+                    assert n.status == Status.closed
 
 
 @pytest.mark.asyncio

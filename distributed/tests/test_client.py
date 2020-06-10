@@ -4626,7 +4626,7 @@ async def test_retire_workers(c, s, a, b):
     assert set(s.workers) == {b.address}
 
     start = time()
-    while a.status != "closed":
+    while a.status != Status.closed:
         await asyncio.sleep(0.01)
         assert time() < start + 5
 
@@ -5830,7 +5830,7 @@ async def test_shutdown(cleanup):
             async with Client(s.address, asynchronous=True) as c:
                 await c.shutdown()
 
-            assert s.status == "closed"
+            assert s.status == Status.closed
             assert w.status == Status.closed
 
 
