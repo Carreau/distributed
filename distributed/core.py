@@ -53,6 +53,7 @@ class Status(Enum):
     closing = "closing"
     closing_gracefully = "closing-gracefully"
     init = "init"
+    created = "created"
     running = "running"
     starting = "starting"
     stopped = "stopped"

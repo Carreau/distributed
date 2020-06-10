@@ -25,30 +25,10 @@ class Process(ProcessInterface):
     Scheduler
     """
 
-    @property
-    def status(self):
-        return self._status
-
-    @status.setter
-    def status(self, new_status):
-        if isinstance(new_status, Status):
-            self._status = new_status
-        elif isinstance(new_status, str) or new_status is None:
-            warnings.warn(
-                f"Since distributed 2.19 `.status` is now an Enum, please assign `Status.{new_status}`",
-                PendingDeprecationWarning,
-                stacklevel=1,
-            )
-            corresponding_enum_variants = [s for s in Status if s.value == new_status]
-            assert len(corresponding_enum_variants) == 1
-            self._status = corresponding_enum_variants[0]
-        else:
-            raise TypeError(f"expected Status or str, got {new_status}")
 
     def __init__(self, **kwargs):
         self.connection = None
         self.proc = None
-        self.status = Status.init
         super().__init__(**kwargs)
 
     async def start(self):

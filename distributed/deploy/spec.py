@@ -36,19 +36,39 @@ class ProcessInterface:
     It should implement the methods below, like ``start`` and ``close``
     """
 
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, new_status):
+        if isinstance(new_status, Status):
+            self._status = new_status
+        elif isinstance(new_status, str) or new_status is None:
+            warnings.warn(
+                f"Since distributed 2.19 `.status` is now an Enum, please assign `Status.{new_status}`",
+                PendingDeprecationWarning,
+                stacklevel=1,
+            )
+            corresponding_enum_variants = [s for s in Status if s.value == new_status]
+            assert len(corresponding_enum_variants) == 1
+            self._status = corresponding_enum_variants[0]
+        else:
+            raise TypeError(f"expected Status or str, got {new_status}")
+
     def __init__(self, scheduler=None, name=None):
         self.address = getattr(self, "address", None)
         self.external_address = None
         self.lock = asyncio.Lock()
-        self.status = "created"
+        self.status = Status.created
         self._event_finished = asyncio.Event()
 
     def __await__(self):
         async def _():
             async with self.lock:
-                if self.status == "created":
+                if self.status == Status.created:
                     await self.start()
-                    assert self.status == "running"
+                    assert self.status == Status.running
             return self
 
         return _().__await__()
@@ -360,7 +380,7 @@ class SpecCluster(Cluster):
 
     def __await__(self):
         async def _():
-            if self.status == "created":
+            if self.status == Status.created:
                 await self._start()
             await self.scheduler
             await self._correct_state()
