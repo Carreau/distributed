@@ -343,7 +343,7 @@ async def test_worker_waits_for_scheduler(cleanup):
         pass
     else:
         assert False
-    assert w.status not in ("closed", "running")
+    assert w.status not in (Status.closed, Status.running)
     await w.close(timeout=0.1)
 
 
@@ -534,7 +534,7 @@ async def test_close_on_disconnect(s, w):
     await s.close()
 
     start = time()
-    while w.status != "closed":
+    while w.status != Status.closed:
         await asyncio.sleep(0.01)
         assert time() < start + 5
 
@@ -1551,7 +1551,7 @@ async def test_close_gracefully(c, s, a, b):
 
     await b.close_gracefully()
 
-    assert b.status == "closed"
+    assert b.status == Status.closed
     assert b.address not in s.workers
     assert mem.issubset(set(a.data))
     for key in proc:
@@ -1566,7 +1566,7 @@ async def test_lifetime(cleanup):
             async with Client(s.address, asynchronous=True) as c:
                 futures = c.map(slowinc, range(200), delay=0.1)
                 await asyncio.sleep(1.5)
-                assert b.status != "running"
+                assert b.status != Status.running
                 await b.finished()
 
                 assert set(b.data).issubset(a.data)  # successfully moved data over

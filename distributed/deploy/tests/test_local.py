@@ -16,6 +16,7 @@ import pytest
 
 from dask.system import CPU_COUNT
 from distributed import Client, Worker, Nanny, get_client
+from distributed.core import Status
 from distributed.deploy.local import LocalCluster, nprocesses_nthreads
 from distributed.metrics import time
 from distributed.system import MEMORY_LIMIT

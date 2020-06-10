@@ -5,6 +5,7 @@ Most are taken from other test files and adapted.
 import asyncio
 
 from distributed import Nanny, worker_client, Queue
+from distributed.core import Status
 from distributed.client import wait
 from distributed.metrics import time
 from distributed.nanny import Nanny
@@ -169,6 +170,6 @@ async def test_retire_workers(c, s, a, b):
     assert set(s.workers) == {b.worker_address}
 
     start = time()
-    while a.status != "closed":
+    while a.status != Status.closed:
         await asyncio.sleep(0.01)
         assert time() < start + 5
