@@ -73,7 +73,7 @@ class Status(Enum):
             return self.value == other.value
         elif isinstance(other, str) or (other is None):
             warnings.warn(
-                f"Since distributed 2.19 `.status` is now an Enum, please compare with `Status.{other}`",
+                f"Since distributed 2.22 `.status` is now an Enum, please compare with `Status.{other}`",
                 PendingDeprecationWarning,
                 stacklevel=1,
             )
