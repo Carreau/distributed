@@ -62,6 +62,7 @@ from .core import (
 from .metrics import time
 from .protocol import to_serialize
 from .protocol.pickle import dumps, loads
+from .protocol.serialize import LazyD
 from .publish import Datasets
 from .pubsub import PubSubClientExtension
 from .security import Security
@@ -214,7 +215,9 @@ class Future(WrappedKey):
         ``dask.distributed.TimeoutError`` is raised.
         """
         if self.client.asynchronous:
-            return self.client.sync(self._result, callback_timeout=timeout)
+            res = self.client.sync(self._result, callback_timeout=timeout)
+            assert not isinstance(res, LazyD)
+            return res
 
         # shorten error traceback
         result = self.client.sync(self._result, callback_timeout=timeout, raiseit=False)
@@ -224,6 +227,7 @@ class Future(WrappedKey):
         elif self.status == "cancelled":
             raise result
         else:
+            assert not isinstance(result, LazyD)
             return result
 
     async def _result(self, raiseit=True):
@@ -234,15 +238,18 @@ class Future(WrappedKey):
                 typ, exc, tb = exc
                 raise exc.with_traceback(tb)
             else:
+                assert not isinstance(exc, LazyD)
                 return exc
         elif self.status == "cancelled":
             exception = CancelledError(self.key)
             if raiseit:
                 raise exception
             else:
+                assert not isinstance(exception, LazyD)
                 return exception
         else:
             result = await self.client._gather([self])
+            assert not isinstance(result[0], LazyD)
             return result[0]
 
     async def _exception(self):
@@ -458,6 +465,7 @@ class FutureState:
         self._get_event().clear()
 
     def set_error(self, exception, traceback):
+        assert not isinstance(traceback, LazyD)
         _, exception, traceback = clean_exception(exception, traceback)
 
         self.status = "error"
@@ -1247,7 +1255,15 @@ class Client:
 
                         try:
                             handler = self._stream_handlers[op]
+
+                            def maybeunpack(arg):
+                                if isinstance(arg, LazyD):
+                                    return arg()
+                                return arg
+
+                            msg = {k: maybeunpack(v) for k, v in msg.items()}
                             result = handler(**msg)
+                            print("RESULT", result)
                             if inspect.isawaitable(result):
                                 await result
                         except Exception as e:
@@ -1259,6 +1275,8 @@ class Client:
 
     def _handle_key_in_memory(self, key=None, type=None, workers=None):
         state = self.futures.get(key)
+        assert not isinstance(state, LazyD)
+        assert not isinstance(state.type, LazyD)
         if state is not None:
             if type and not state.type:  # Type exists and not yet set
                 try:
@@ -1839,6 +1857,7 @@ class Client:
                     if errors == "raise":
                         try:
                             st = self.futures[key]
+                            assert not isinstance(st.traceback, LazyD)
                             exception = st.exception
                             traceback = st.traceback
                         except (KeyError, AttributeError):
@@ -1897,6 +1916,7 @@ class Client:
 
         data.update(response["data"])
         result = pack_data(unpacked, merge(data, bad_data))
+        assert not isinstance(result[0], LazyD)
         return result
 
     async def _gather_remote(self, direct, local_worker):
@@ -1916,6 +1936,7 @@ class Client:
                 data2, missing_keys, missing_workers = await gather_from_workers(
                     who_has, rpc=self.rpc, close=False
                 )
+                print("GATHERED IN CLIENT", data2)
                 response = {"status": "OK", "data": data2}
                 if missing_keys:
                     keys2 = [key for key in keys if key not in data2]
@@ -2676,6 +2697,10 @@ class Client:
             user_priority=priority,
             actors=actors,
         )
+        import time
+
+        time.sleep(4)
+        print("FUTURES", futures)
         packed = pack_data(keys, futures)
         if sync:
             if getattr(thread_state, "key", False):

@@ -18,6 +18,8 @@ import uuid
 import warnings
 import weakref
 
+from there import print as print
+
 import dask
 from dask.core import istask
 from dask.compatibility import apply
@@ -978,6 +980,7 @@ class Worker(ServerNode):
         result, missing_keys, missing_workers = await gather_from_workers(
             who_has, rpc=self.rpc, who=self.address
         )
+        # print('GATHERED')
         if missing_keys:
             logger.warning(
                 "Could not find data: %s on workers: %s (who_has: %s)",
@@ -1280,6 +1283,7 @@ class Worker(ServerNode):
         start = time()
 
         try:
+            # why do we write read?
             compressed = await comm.write(msg, serializers=serializers)
             response = await comm.read(deserializers=serializers)
             assert response == "OK", response
@@ -1978,9 +1982,17 @@ class Worker(ServerNode):
                 logger.debug("Request %d keys", len(deps))
 
                 start = time()
+                ##print('gathering dep')
+                from distributed.protocol.serialize import pickle_loads, pickle_dumps
+
                 response = await get_data_from_worker(
-                    self.rpc, deps, worker, who=self.address
+                    self.rpc,
+                    deps,
+                    worker,
+                    who=self.address,
+                    serializers={"pickle": (pickle_loads, pickle_dumps, False)},
                 )
+                print("RESPONSE", response)
                 stop = time()
 
                 if response["status"] == "busy":
@@ -1999,7 +2011,7 @@ class Worker(ServerNode):
                             "source": worker,
                         }
                     )
-
+                # print('tbytes.....')
                 total_bytes = sum(self.nbytes.get(dep, 0) for dep in response["data"])
                 duration = (stop - start) or 0.010
                 bandwidth = total_bytes / duration
@@ -2021,7 +2033,7 @@ class Worker(ServerNode):
                     self.bandwidth = self.bandwidth * 0.95 + bandwidth * 0.05
                     bw, cnt = self.bandwidth_workers[worker]
                     self.bandwidth_workers[worker] = (bw + bandwidth, cnt + 1)
-
+                    # print('bytes fro types...')
                     types = set(map(type, response["data"].values()))
                     if len(types) == 1:
                         [typ] = types
@@ -2031,9 +2043,11 @@ class Worker(ServerNode):
                 if self.digests is not None:
                     self.digests["transfer-bandwidth"].add(total_bytes / duration)
                     self.digests["transfer-duration"].add(duration)
+                # print('tcount.....')
                 self.counters["transfer-count"].add(len(response["data"]))
                 self.incoming_count += 1
 
+                # print('rdeps.....')
                 self.log.append(("receive-dep", worker, list(response["data"])))
             except EnvironmentError as e:
                 logger.exception("Worker stream died during communication: %s", worker)
@@ -2053,6 +2067,7 @@ class Worker(ServerNode):
             finally:
                 self.comm_nbytes -= total_nbytes
                 busy = response.get("status", "") == "busy"
+                # print('assign data....')
                 data = response.get("data", {})
 
                 for d in self.in_flight_workers.pop(worker):
@@ -2069,6 +2084,7 @@ class Worker(ServerNode):
                             {"op": "missing-data", "errant_worker": worker, "key": d}
                         )
 
+                # print('END - assign data....')
                 if self.validate:
                     self.validate_state()
 
@@ -2533,6 +2549,19 @@ class Worker(ServerNode):
                 "Execute key: %s worker: %s", key, self.address
             )  # TODO: comment out?
             try:
+                from .protocol.serialize import LazyD
+
+                # print('ISLD:',isinstance(args2 , LazyD))
+                # print('ISLD:',isinstance(kwargs2 , LazyD))
+                # print('TLD:', type(args2))
+
+                def maybeunpack(arg):
+                    if isinstance(arg, LazyD):
+                        return arg()
+                    return arg
+
+                args2 = tuple([maybeunpack(a) for a in args2])
+                print("will_sumit to executor", function, args2, kwargs2)
                 result = await self.executor_submit(
                     key,
                     apply_function,
@@ -3225,6 +3254,7 @@ async def get_data_from_worker(
     Worker.gather_deps
     utils_comm.gather_data_from_workers
     """
+    # print("GETTING DATA")
     if serializers is None:
         serializers = rpc.serializers
     if deserializers is None:
@@ -3243,6 +3273,7 @@ async def get_data_from_worker(
                 who=who,
                 max_connections=max_connections,
             )
+            # print("GETTING DATA", response)
             try:
                 status = response["status"]
             except KeyError:

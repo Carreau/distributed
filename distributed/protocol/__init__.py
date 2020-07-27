@@ -5,6 +5,7 @@ from distutils.version import LooseVersion
 from .compression import compressions, default_compression
 from .core import dumps, loads, maybe_compress, decompress, msgpack
 from .cuda import cuda_serialize, cuda_deserialize
+from . import serialize as smod
 from .serialize import (
     serialize,
     deserialize,

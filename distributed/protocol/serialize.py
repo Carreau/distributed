@@ -50,6 +50,7 @@ def dask_dumps(x, context=None):
 def dask_loads(header, frames):
     typ = pickle.loads(header["type-serialized"])
     loads = dask_deserialize.dispatch(typ)
+    # print('DL!', loads)
     return loads(header, frames)
 
 
@@ -272,6 +273,16 @@ def serialize(x, serializers=None, on_error="message", context=None):
         raise TypeError(msg, str(x)[:10000])
 
 
+class LazyD:
+    def __init__(self, loads, header, frames):
+        self.loads = loads
+        self.header = header
+        self.frames = frames
+
+    def __call__(self):
+        return self.loads(self.header, self.frames)
+
+
 def deserialize(header, frames, deserializers=None):
     """
     Convert serialized header and list of bytestrings back to a Python object
@@ -288,6 +299,7 @@ def deserialize(header, frames, deserializers=None):
     --------
     serialize
     """
+    # print('DD', deserializers)
     if "is-collection" in header:
         headers = header["sub-headers"]
         lengths = header["frame-lengths"]
@@ -327,7 +339,30 @@ def deserialize(header, frames, deserializers=None):
             "data with %s" % (name, str(list(deserializers)))
         )
     dumps, loads, wants_context = families[name]
-    return loads(header, frames)
+    # print('LL', loads, name, deserializers)
+    import inspect
+
+    stack = inspect.stack()
+    if any(
+        [
+            stack[i].function == "get_data_from_worker"
+            for i in range(len(stack))
+            # These are the other places it is called.
+            # stack[3].function == 'should_run_async',
+            # stack[1].function == 'check_complete'
+        ]
+    ):
+        res = LazyD(loads, header, frames)
+        for s in stack[::-1]:
+            print("  | ", s.filename + ":" + str(s.lineno), s.function)
+        res = loads(header, frames)
+    else:
+        for s in stack[::-1]:
+            print("  > ", s.filename + ":" + str(s.lineno), s.function)
+        res = loads(header, frames)
+
+    print("RES", res)
+    return res
 
 
 class Serialize:
@@ -378,6 +413,8 @@ class Serialized:
 
     def deserialize(self):
         from .core import decompress
+
+        print("Decompressing...")
 
         frames = decompress(self.header, self.frames)
         return deserialize(self.header, frames)

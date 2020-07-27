@@ -2861,6 +2861,7 @@ class Scheduler(ServerNode):
         data, missing_keys, missing_workers = await gather_from_workers(
             who_has, rpc=self.rpc, close=False, serializers=serializers
         )
+        print("GATHER IN SCHED")
         if not missing_keys:
             result = {"status": "OK", "data": data}
         else:

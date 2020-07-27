@@ -76,6 +76,7 @@ async def gather_from_workers(who_has, rpc, close=True, serializers=None, who=No
             for worker, c in coroutines.items():
                 try:
                     r = await c
+                    print("RRRRR", r)
                 except EnvironmentError:
                     missing_workers.add(worker)
                 except ValueError as e:
