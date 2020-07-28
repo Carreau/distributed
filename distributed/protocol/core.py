@@ -136,8 +136,6 @@ def loads(frames, deserialize=True, deserializers=None):
                     fs = decompress(head, fs)
                 if not any(hasattr(f, "__cuda_array_interface__") for f in fs):
                     fs = merge_frames(head, fs)
-                print("D", deserializers)
-                print("X", _deserialize, fs)
                 value = _deserialize(head, fs, deserializers=deserializers)
             else:
                 value = Serialized(head, fs)
@@ -155,7 +153,6 @@ def loads(frames, deserialize=True, deserializers=None):
                 return coll
 
             msg = put_in(key, msg, value)
-
         return msg
     except Exception:
         logger.critical("Failed to deserialize", exc_info=True)

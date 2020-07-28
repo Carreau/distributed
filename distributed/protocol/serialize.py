@@ -67,6 +67,11 @@ def pickle_loads(header, frames):
     return pickle.loads(x, buffers=buffers)
 
 
+def pickle_loads_lazy(header, frames):
+    x, buffers = frames[0], frames[1:]
+    return lambda: pickle.loads(x, buffers=buffers)
+
+
 def msgpack_decode_default(obj):
     """
     Custom packer/unpacker for msgpack to support Enums
@@ -120,6 +125,7 @@ def register_serialization_family(name, dumps, loads):
 
 register_serialization_family("dask", dask_dumps, dask_loads)
 register_serialization_family("pickle", pickle_dumps, pickle_loads)
+register_serialization_family("pickle_lazy_load", pickle_dumps, pickle_loads_lazy)
 register_serialization_family("msgpack", msgpack_dumps, msgpack_loads)
 register_serialization_family("error", None, serialization_error_loads)
 
@@ -283,6 +289,42 @@ class LazyD:
         return self.loads(self.header, self.frames)
 
 
+from collections.abc import MutableMapping
+
+
+class LazyDict(MutableMapping):
+    """a dict which data is lazily unpicked on first access"""
+
+    def __init__(self, loads, header, frames):
+        self.loads = loads
+        self.header = header
+        self.frames = frames
+        self.data = None
+
+    def deserialize(self):
+        if self.data is None:
+            self.data = self.loads(self.header, self.frames)
+
+    def __getitem__(self, key):
+        self.deserialize()
+        return self.data[key]
+
+    def __setitem__(self, key, value):
+        self.deserialize()
+        self.data[key] = value
+
+    def __delitem__(self, key):
+        self.deserialize()
+        del self.data[key]
+
+    def __iter__(self):
+        self.deserialize()
+        return iter(self.data)
+
+    def __len__(self, deserialize):
+        return len(self.data)
+
+
 def deserialize(header, frames, deserializers=None):
     """
     Convert serialized header and list of bytestrings back to a Python object
@@ -343,19 +385,22 @@ def deserialize(header, frames, deserializers=None):
     import inspect
 
     stack = inspect.stack()
-    if any(
-        [
-            stack[i].function == "get_data_from_worker"
-            for i in range(len(stack))
-            # These are the other places it is called.
-            # stack[3].function == 'should_run_async',
-            # stack[1].function == 'check_complete'
-        ]
+    if (
+        any(
+            [
+                stack[i].function == "get_data_from_worker"
+                for i in range(len(stack))
+                # These are the other places it is called.
+                # stack[3].function == 'should_run_async',
+                # stack[1].function == 'check_complete'
+            ]
+        )
+        and False
     ):
         res = LazyD(loads, header, frames)
         for s in stack[::-1]:
             print("  | ", s.filename + ":" + str(s.lineno), s.function)
-        res = loads(header, frames)
+        # res = loads(header, frames)
     else:
         for s in stack[::-1]:
             print("  > ", s.filename + ":" + str(s.lineno), s.function)

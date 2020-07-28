@@ -1982,17 +1982,14 @@ class Worker(ServerNode):
                 logger.debug("Request %d keys", len(deps))
 
                 start = time()
-                ##print('gathering dep')
-                from distributed.protocol.serialize import pickle_loads, pickle_dumps
 
                 response = await get_data_from_worker(
                     self.rpc,
                     deps,
                     worker,
                     who=self.address,
-                    serializers={"pickle": (pickle_loads, pickle_dumps, False)},
+                    deserializers=("pickle_lazy_load",),
                 )
-                print("RESPONSE", response)
                 stop = time()
 
                 if response["status"] == "busy":
@@ -2549,14 +2546,13 @@ class Worker(ServerNode):
                 "Execute key: %s worker: %s", key, self.address
             )  # TODO: comment out?
             try:
-                from .protocol.serialize import LazyD
+                # from .protocol.serialize import LazyD
 
                 # print('ISLD:',isinstance(args2 , LazyD))
                 # print('ISLD:',isinstance(kwargs2 , LazyD))
                 # print('TLD:', type(args2))
-
                 def maybeunpack(arg):
-                    if isinstance(arg, LazyD):
+                    if callable(arg):
                         return arg()
                     return arg
 
